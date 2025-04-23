@@ -15,15 +15,12 @@ const router = createBrowserRouter(
       errorElement: <ErrorPage />,
       children: [
         { index: true, element: <CandidateSearch /> },
-        { path: '/SavedCandidates', element: <SavedCandidates /> },
+        { path: '/saved', element: <SavedCandidates /> },
       ],
     },
   ],
-  {
-    future: { 
-      v7_relativeSplatPath: true,  // Opts into v7 relative splat path resolution  // Enables React.startTransition for smoother state updates
-    },
-  }
+  
+  
 );
 
 

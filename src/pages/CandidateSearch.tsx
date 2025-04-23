@@ -1,40 +1,65 @@
-import { useState } from "react";
-import { searchGithubUser } from "../api/API";
+import { useState, useEffect } from "react";
+import { searchGithub, searchGithubUser } from "../api/API";
+import Candidate from "../interfaces/Candidate.interface";
 import CandidateCard from "../components/CandidateCard";
-import  Candidate  from "../interfaces/Candidate.interface";
 
 const CandidateSearch = () => {
-  const [searchTerm, setSearchTerm] = useState(""); // Capture user input
-  const [candidate, setCandidate] = useState<Candidate | null>(null); // Store the searched candidate
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleSearch = async () => {
-    if (searchTerm.trim() === "") return; // Prevent empty searches
-    try {
-      const result = await searchGithubUser(searchTerm);
-      setCandidate(result); // Display searched candidate
-    } catch (error) {
-      console.error("Error fetching candidate:", error);
-    }
+  useEffect(() => {
+    const fetchCandidates = async () => {
+      try {
+        const users = await searchGithub();
+        const detailedCandidates = await Promise.all(
+          users.map(async (user: { login: string; id: number; avatar_url: string }) => {
+            const extra = await searchGithubUser(user.login);
+            return {
+              id: user.id,
+              name: extra.name || "No Name",
+              username: user.login,
+              login: user.login,
+              location: extra.location || "No Location",
+              avatar_url: user.avatar_url,
+              email: extra.email || "No Email",
+              html_url: extra.html_url,
+              company: extra.company || "No Company",
+            } as Candidate;
+          })
+        );
+
+        setCandidates(detailedCandidates);
+        setCurrentIndex(0);
+      } catch (error) {
+        console.error("Error fetching candidates:", error);
+      }
+    };
+
+    fetchCandidates();
+  }, []);
+
+  const handleSave = () => {
+    if (currentIndex >= candidates.length) return;
+
+    const stored = localStorage.getItem("savedCandidates");
+    const savedCandidates = stored ? JSON.parse(stored) : [];
+    savedCandidates.push(candidates[currentIndex]);
+    localStorage.setItem("savedCandidates", JSON.stringify(savedCandidates));
+
+    setCurrentIndex(currentIndex + 1);
+  };
+
+  const handleNext = () => {
+    setCurrentIndex(currentIndex + 1);
   };
 
   return (
-    <div className="d-flex flex-column align-items-center">
-      <h1>Search for a GitHub User</h1>
-      <input 
-        type="text" 
-        value={searchTerm} 
-        onChange={(e) => setSearchTerm(e.target.value)}
-        placeholder="Enter GitHub username..." 
-        className="form-control mb-2"
-      />
-      <button className="btn btn-primary mb-3" onClick={handleSearch}>Search</button>
-
-      {candidate ? (
-        <CandidateCard candidate={candidate} onSave={() => {}} onNext={() => {}} />
+    <div>
+      <h1>Candidate Search</h1>
+      {currentIndex < candidates.length ? (
+        <CandidateCard candidate={candidates[currentIndex]} onSave={handleSave} onNext={handleNext} />
       ) : (
-        <h2 style={{ textAlign: "center", fontWeight: "bold", color: "gray" }}>
-          No candidate found. Try searching!
-        </h2>
+        <p>No more candidates available.</p>
       )}
     </div>
   );
