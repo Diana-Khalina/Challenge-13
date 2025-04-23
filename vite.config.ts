@@ -7,6 +7,9 @@ export default defineConfig({
     port: 3000, 
     host: "0.0.0.0", 
   },
+  preview: {
+    allowedHosts: ["challenge-13-tt2q.onrender.com"], 
+  },
   envDir: './',
   plugins: [react()],
 });
